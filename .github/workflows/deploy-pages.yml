@@ -27,13 +27,23 @@ jobs:
       - name: Install
         run: bun install --frozen-lockfile
 
+      # Prefer repository Variables (Settings → Secrets and variables → Actions → Variables).
+      # Secrets also work as a fallback. VITE_* values end up in the client bundle either way.
       - name: Build static SPA
         run: bun run build
         env:
           PAGES_BASE: /open-bench/
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
-          VITE_SUPABASE_PROJECT_ID: ${{ secrets.VITE_SUPABASE_PROJECT_ID }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_PROJECT_ID: ${{ vars.VITE_SUPABASE_PROJECT_ID || secrets.VITE_SUPABASE_PROJECT_ID }}
+
+      - name: Verify SPA shell
+        run: |
+          test -f dist/client/index.html
+          test -f dist/client/404.html
+          test -f dist/client/.nojekyll
+          grep -q 'assets/' dist/client/index.html
+          echo "SPA artifact looks good"
 
       - uses: actions/upload-pages-artifact@v3
         with:

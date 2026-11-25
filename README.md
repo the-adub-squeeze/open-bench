@@ -27,9 +27,13 @@ Open the URL Vite prints (default `http://localhost:3000/open-bench/`).
 
 Pushes to `main` build a static SPA and deploy via `.github/workflows/deploy-pages.yml`.
 
-1. Repo **Settings → Pages → Source: GitHub Actions**
-2. Add repository secrets for the `VITE_SUPABASE_*` variables above
-3. After the workflow succeeds, the site is at `https://<user>.github.io/open-bench/`
+1. Repo **Settings → Pages → Source: GitHub Actions** (not “Deploy from a branch”)
+2. Add the `VITE_SUPABASE_*` values as **Actions → Variables** (or Secrets — either works)
+3. Run **Actions → Deploy to GitHub Pages → Run workflow**
+4. After that workflow succeeds, the app is at `https://<user>.github.io/open-bench/`
+
+If you see a markdown README instead of the makerspace UI, Pages is still serving the
+repo via Jekyll. Switch Source to **GitHub Actions** and re-run the deploy workflow.
 
 Local Pages-shaped build:
 
