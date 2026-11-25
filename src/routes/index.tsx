@@ -31,9 +31,9 @@ const spacesQuery = queryOptions({
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "The Commons Workshop — a free makerspace, funded in the open" },
+      { title: "Open Bench — a free makerspace, funded in the open" },
       { name: "description", content: "Donate toward a free community makerspace. Every dollar is logged on a public ledger, and the community picks the building." },
-      { property: "og:title", content: "The Commons Workshop" },
+      { property: "og:title", content: "Open Bench" },
       { property: "og:description", content: "A free makerspace funded by neighbors, tracked on a public ledger." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -68,7 +68,7 @@ function Index() {
       <Spaces />
       <AfterOpening />
       <footer className="border-t-2 border-border px-5 py-8 text-center text-sm text-muted-foreground">
-        The Commons Workshop · Free forever. No memberships, no fees, no exceptions.
+        Open Bench · Free forever. No memberships, no fees, no exceptions.
       </footer>
     </main>
   );
@@ -79,7 +79,7 @@ function Hero() {
     <section className="grid-paper border-b-2 border-border px-5 pb-14 pt-10 md:pt-20">
       <div className="mx-auto max-w-5xl">
         <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-          The Commons Workshop · Est. by neighbors
+          Open Bench · Est. by neighbors
         </p>
         <h1 className="mt-4 text-5xl leading-[0.95] md:text-8xl">
           A free shop.<br />
