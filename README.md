@@ -46,6 +46,18 @@ bun run build
 bunx serve dist/client
 ```
 
+## Community donations (Supabase)
+
+Anyone can **suggest spaces** and **log donations** on the public ledger. Expenses stay owner-only.
+
+Run this once in the Supabase SQL Editor (also in `supabase/donations_rls.sql`):
+
+```sh
+bun run sql:donations   # prints the SQL
+```
+
+Until that policy is applied, the Chip in form will error.
+
 ## Scripts
 
 | Script | What it does |
@@ -54,4 +66,6 @@ bunx serve dist/client
 | `bun run build` | Static SPA into `dist/client` (+ `404.html` for Pages) |
 | `bun run preview` | Preview the production build |
 | `bun test` / `bun run test` | Vitest |
+| `bun run test:e2e` | Playwright smoke (build + preview, needs `.env`) |
+| `bun run test:e2e:live` | Same smoke against the live Pages URL |
 | `bun run lint` | ESLint |

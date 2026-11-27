@@ -11,7 +11,10 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:live": "PLAYWRIGHT_BASE_URL=https://the-adub-squeeze.github.io/open-bench/ playwright test",
+    "sql:donations": "node scripts/apply-donations-rls.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1",
@@ -89,6 +92,7 @@
     "globals": "^15.15.0",
     "jsdom": "^20.0.3",
     "postgres": "^4.1.1",
+    "@playwright/test": "^1.56.1",
     "prettier": "^3.7.3",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.73.0",

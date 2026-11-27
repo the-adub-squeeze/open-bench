@@ -104,9 +104,21 @@ function Hero() {
 
 function MoneyFlow() {
   const steps = [
-    { n: "01", t: "You donate", d: "Your gift is logged on the public ledger below with the date and amount, the moment it lands." },
-    { n: "02", t: "It's held for the space", d: "Funds are only spent on buying or leasing the building, and setup like lockers and benches." },
-    { n: "03", t: "Every expense is shown", d: "Each payment out is posted with a receipt. Anyone can add it all up and check our math." },
+    {
+      n: "01",
+      t: "You donate",
+      d: "Log your gift on the public ledger below with the date and amount. Card checkout comes later — for now the ledger is the source of truth.",
+    },
+    {
+      n: "02",
+      t: "It's held for the space",
+      d: "Funds are only spent on buying or leasing the building, and setup like lockers and benches.",
+    },
+    {
+      n: "03",
+      t: "Every expense is shown",
+      d: "Each payment out is posted with a receipt. Anyone can add it all up and check our math.",
+    },
   ];
   return (
     <section id="donate" className="border-b-2 border-border px-5 py-14">
@@ -121,12 +133,115 @@ function MoneyFlow() {
             </div>
           ))}
         </div>
-        <div className="mt-8 block-card bg-accent p-5 text-accent-foreground">
-          <p className="font-bold">Online donations open soon.</p>
-          <p className="mt-1 text-sm">We're setting up secure card payments. Each one will appear on the ledger automatically.</p>
+        <div className="mt-8 grid gap-5 md:grid-cols-[1.2fr_1fr]">
+          <DonateForm />
+          <div className="block-card bg-accent p-5 text-accent-foreground">
+            <p className="font-bold">Community ledger first</p>
+            <p className="mt-2 text-sm">
+              Anyone can chip in and post it publicly — neighbors included. Card payments and automatic bank sync are next; until then, log what you gave so the balance stays honest.
+            </p>
+          </div>
         </div>
       </div>
     </section>
+  );
+}
+
+function DonateForm() {
+  const qc = useQueryClient();
+  const [done, setDone] = useState(false);
+  const donate = useMutation({
+    mutationFn: async (f: FormData) => {
+      const dollars = String(f.get("amount") ?? "").replace(/[^0-9.]/g, "");
+      const amount = Number(dollars);
+      if (!Number.isFinite(amount) || amount < 1) {
+        throw new Error("Enter at least $1");
+      }
+      const amountCents = Math.round(amount * 100);
+      if (amountCents < 100 || amountCents > 100_000_000) {
+        throw new Error("Amount out of range");
+      }
+      const who = String(f.get("name") ?? "").trim() || "A neighbor";
+      const method = String(f.get("method") ?? "").trim();
+      const label = method ? `Donation from ${who} (${method})` : `Donation from ${who}`;
+      const { error } = await supabase.from("ledger_entries").insert({
+        kind: "donation",
+        amount_cents: amountCents,
+        label: label.slice(0, 200),
+        receipt_url: null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setDone(true);
+      qc.invalidateQueries({ queryKey: ["ledger"] });
+    },
+  });
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    donate.mutate(new FormData(form), {
+      onSuccess: () => form.reset(),
+    });
+  };
+  const field = "mt-1 w-full border-2 border-input bg-background px-3 py-2 outline-none focus:border-primary";
+  return (
+    <form
+      id="donate-form"
+      onSubmit={onSubmit}
+      className="block-card h-fit space-y-3 p-5"
+      data-testid="donate-form"
+    >
+      <h3 className="text-xl">Chip in</h3>
+      <p className="text-sm text-muted-foreground">
+        Posts straight to the public ledger. Be the first if the balance is still zero.
+      </p>
+      <label className="block text-sm font-semibold">
+        Amount (USD)
+        <input
+          name="amount"
+          required
+          inputMode="decimal"
+          min={1}
+          step="1"
+          placeholder="25"
+          className={field}
+          data-testid="donate-amount"
+        />
+      </label>
+      <label className="block text-sm font-semibold">
+        Your name (optional)
+        <input name="name" maxLength={60} placeholder="A neighbor" className={field} data-testid="donate-name" />
+      </label>
+      <label className="block text-sm font-semibold">
+        How you paid / will pay (optional)
+        <input
+          name="method"
+          maxLength={40}
+          placeholder="Venmo, cash, Zelle…"
+          className={field}
+          data-testid="donate-method"
+        />
+      </label>
+      <button
+        type="submit"
+        disabled={donate.isPending}
+        className="w-full bg-primary py-3 font-bold text-primary-foreground disabled:opacity-60"
+        data-testid="donate-submit"
+      >
+        {donate.isPending ? "Posting…" : "Log donation on the ledger"}
+      </button>
+      {done && (
+        <p className="text-sm font-semibold text-primary" data-testid="donate-success">
+          Thank you — it&apos;s on the ledger.
+        </p>
+      )}
+      {donate.isError && (
+        <p className="text-sm text-destructive" data-testid="donate-error">
+          Couldn&apos;t post that. If this keeps failing, the donation policy may not be applied in Supabase yet.
+        </p>
+      )}
+    </form>
   );
 }
 
@@ -135,7 +250,11 @@ function Ledger() {
   const raised = data.filter((e) => e.kind === "donation").reduce((a, e) => a + e.amount_cents, 0);
   const spent = data.filter((e) => e.kind === "expense").reduce((a, e) => a + e.amount_cents, 0);
   return (
-    <section className="border-b-2 border-border bg-secondary px-5 py-14 text-secondary-foreground">
+    <section
+      id="ledger"
+      className="border-b-2 border-border bg-secondary px-5 py-14 text-secondary-foreground"
+      data-testid="ledger"
+    >
       <div className="mx-auto max-w-5xl">
         <h2 className="text-3xl md:text-5xl">The public ledger</h2>
         <p className="mt-2 max-w-xl opacity-80">Every dollar in, every dollar out. Nothing is hidden or edited after the fact.</p>
@@ -245,10 +364,18 @@ function SuggestForm() {
   };
   const field = "mt-1 w-full border-2 border-input bg-background px-3 py-2 outline-none focus:border-primary";
   return (
-    <form onSubmit={onSubmit} className="block-card h-fit space-y-3 p-5">
+    <form onSubmit={onSubmit} className="block-card h-fit space-y-3 p-5" data-testid="suggest-form">
       <h3 className="text-xl">Suggest a space</h3>
       <label className="block text-sm font-semibold">What is it?
-        <input name="title" required minLength={3} maxLength={120} placeholder="Old fire station on 5th" className={field} />
+        <input
+          name="title"
+          required
+          minLength={3}
+          maxLength={120}
+          placeholder="Old fire station on 5th"
+          className={field}
+          data-testid="suggest-title"
+        />
       </label>
       <label className="block text-sm font-semibold">Type
         <select name="type" className={field}>{SPACE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</select>
@@ -265,11 +392,20 @@ function SuggestForm() {
       <label className="block text-sm font-semibold">Your name (optional)
         <input name="name" maxLength={60} className={field} />
       </label>
-      <button disabled={add.isPending} className="w-full bg-primary py-3 font-bold text-primary-foreground disabled:opacity-60">
+      <button
+        type="submit"
+        disabled={add.isPending}
+        className="w-full bg-primary py-3 font-bold text-primary-foreground disabled:opacity-60"
+        data-testid="suggest-submit"
+      >
         {add.isPending ? "Adding…" : "Add it to the map"}
       </button>
-      {done && <p className="text-sm font-semibold text-primary">Thanks! Your spot is on the list.</p>}
-      {add.isError && <p className="text-sm text-destructive">Couldn't add that. Try again.</p>}
+      {done && (
+        <p className="text-sm font-semibold text-primary" data-testid="suggest-success">
+          Thanks! Your spot is on the list.
+        </p>
+      )}
+      {add.isError && <p className="text-sm text-destructive">Couldn&apos;t add that. Try again.</p>}
     </form>
   );
 }
